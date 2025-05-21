@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import Notification from "./Notification";
 
 const API_URL = "https://localhost:7136/api"; // Change if needed
 
@@ -8,27 +9,59 @@ function CourseForm({ course, onClose, instructorId }) {
   const [description, setDescription] = useState(course ? course.description : "");
   const [mediaUrl, setMediaUrl] = useState(course ? course.mediaUrl : "");
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  const validateUrl = (url) => {
+    if (!url) return true; // URL is optional
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
+
+    // Validate URL format
+    if (mediaUrl && !validateUrl(mediaUrl)) {
+      setErrors({ mediaUrl: "Please enter a valid URL (http://, https://, or ftp://)" });
+      setLoading(false);
+      return;
+    }
 
     const payload = {
-      title,
-      description,
-      instructorId,
-      mediaUrl,
+      Title: title,
+      Description: description,
+      MediaUrl: mediaUrl,
+      InstructorId: instructorId
     };
 
     try {
       if (course) {
         await axios.put(`${API_URL}/Course/${course.courseId}`, payload);
+        setNotification({ message: "Course updated successfully!", type: "success" });
+        setTimeout(() => onClose(true), 1000);
       } else {
         await axios.post(`${API_URL}/Course`, payload);
+        setNotification({ message: "Course created successfully!", type: "success" });
+        setTimeout(() => onClose(true), 1000);
       }
-      onClose(true);
-    } catch {
-      alert("Error saving course");
+    } catch (error) {
+      console.error("Error saving course:", error.response?.data);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+        setNotification({ message: "Error saving course", type: "error" });
+      } else {
+        setNotification({ 
+          message: error.response?.data?.message || "Error saving course", 
+          type: "error" 
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -36,6 +69,13 @@ function CourseForm({ course, onClose, instructorId }) {
 
   return (
     <div style={styles.overlay}>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
       <form onSubmit={handleSubmit} style={styles.form}>
         <h3>{course ? "Edit Course" : "Add Course"}</h3>
         <input
@@ -46,6 +86,8 @@ function CourseForm({ course, onClose, instructorId }) {
           required
           style={styles.input}
         />
+        {errors.Title && <div style={styles.error}>{errors.Title}</div>}
+        
         <textarea
           placeholder="Description"
           value={description}
@@ -53,6 +95,7 @@ function CourseForm({ course, onClose, instructorId }) {
           required
           style={styles.input}
         />
+        
         <input
           type="text"
           placeholder="Media URL (e.g. PDF/Image/Video link)"
@@ -60,6 +103,8 @@ function CourseForm({ course, onClose, instructorId }) {
           onChange={e => setMediaUrl(e.target.value)}
           style={styles.input}
         />
+        {errors.MediaUrl && <div style={styles.error}>{errors.MediaUrl}</div>}
+        
         {mediaUrl && (
           <div>
             <small>
@@ -109,6 +154,12 @@ const styles = {
     borderRadius: "4px",
     border: "1px solid #ccc",
     marginBottom: "1rem",
+  },
+  error: {
+    color: "#dc2626",
+    fontSize: "0.875rem",
+    marginTop: "-0.5rem",
+    marginBottom: "0.5rem",
   },
   actions: {
     display: "flex",

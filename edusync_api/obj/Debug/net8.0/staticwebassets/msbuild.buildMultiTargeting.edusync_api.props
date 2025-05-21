@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\edusync_api.props" />
+</Project>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
+import Notification from "./Notification";
 
 const API_URL = "https://localhost:7136/api";
 
@@ -29,6 +30,7 @@ function AssessmentForm({ assessment, onClose, courses }) {
     }];
   });
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   // Add event listener for browser back button
   React.useEffect(() => {
@@ -82,40 +84,41 @@ function AssessmentForm({ assessment, onClose, courses }) {
     setLoading(true);
 
     if (!title.trim() || !courseId) {
-      alert("Title and course are required.");
+      setNotification({ message: "Title and course are required.", type: "error" });
       setLoading(false);
       return;
     }
     if (questions.some(q => !q.question.trim() || q.options.some(opt => !opt.trim()))) {
-      alert("All questions and options are required.");
+      setNotification({ message: "All questions and options are required.", type: "error" });
       setLoading(false);
       return;
     }
 
     const payload = {
-      courseId,
-      title,
-      questions: JSON.stringify(questions),
-      maxScore: questions.length,
+      Title: title,
+      Questions: JSON.stringify(questions),
+      MaxScore: questions.length
     };
 
     try {
       if (assessment) {
-        await axios.put(`${API_URL}/Assessment/${assessment.assessmentId}`, {
-          ...payload,
-          assessmentId: assessment.assessmentId,
-        });
+        await axios.put(`${API_URL}/Assessment/${assessment.assessmentId}`, payload);
+        setNotification({ message: "Assessment updated successfully!", type: "success" });
+        setTimeout(() => onClose(true), 1000);
       } else {
-        await axios.post(`${API_URL}/Assessment`, payload);
+        await axios.post(`${API_URL}/Assessment`, {
+          ...payload,
+          CourseId: courseId
+        });
+        setNotification({ message: "Assessment created successfully!", type: "success" });
+        setTimeout(() => onClose(true), 1000);
       }
-      onClose(true);
     } catch (error) {
       if (error.response?.status === 401) {
-        // Handle unauthorized error
-        alert("Your session has expired. Please log in again.");
-        onClose(false);
+        setNotification({ message: "Your session has expired. Please log in again.", type: "error" });
+        setTimeout(() => onClose(false), 1000);
       } else {
-        alert("Error saving assessment");
+        setNotification({ message: "Error saving assessment", type: "error" });
       }
     } finally {
       setLoading(false);
@@ -128,6 +131,13 @@ function AssessmentForm({ assessment, onClose, courses }) {
 
   return (
     <div style={styles.overlay}>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.header}>
           <button

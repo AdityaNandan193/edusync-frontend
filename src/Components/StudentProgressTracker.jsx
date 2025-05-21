@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
+import { toast } from "react-toastify";
 
 const API_URL = "https://localhost:7136/api";
+const DEBOUNCE_DELAY = 300; // 300ms delay for debouncing
 
 function StudentProgressTracker() {
   const { user } = useAuth();
@@ -10,14 +12,24 @@ function StudentProgressTracker() {
   const [loading, setLoading] = useState(true);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchAssessmentHistory();
+  // Debounced fetch function
+  const debouncedFetch = useCallback((func) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        func(...args);
+      }, DEBOUNCE_DELAY);
+    };
   }, []);
 
-  const fetchAssessmentHistory = async () => {
-    try {
+  const fetchAssessmentHistory = useCallback(async (showLoading = true) => {
+    if (showLoading) {
       setLoading(true);
+    }
+    try {
       // Fetch all results
       const resultsRes = await axios.get(`${API_URL}/Result`);
       // Filter results for current user
@@ -52,14 +64,54 @@ function StudentProgressTracker() {
       setAssessmentHistory(history);
     } catch (error) {
       console.error("Error fetching assessment history:", error);
+      toast.error("Failed to fetch assessment history");
       setAssessmentHistory([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
+      setIsRefreshing(false);
     }
-  };
+  }, [user.userId]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchAssessmentHistory(true);
+  }, [fetchAssessmentHistory]);
+
+  // Set up polling with debouncing
+  useEffect(() => {
+    const debouncedFetchHistory = debouncedFetch(() => {
+      if (!isRefreshing) {
+        setIsRefreshing(true);
+        fetchAssessmentHistory(false);
+      }
+    });
+
+    const pollInterval = setInterval(debouncedFetchHistory, 5000);
+    return () => clearInterval(pollInterval);
+  }, [debouncedFetch, fetchAssessmentHistory, isRefreshing]);
+
+  // Listen for custom event when assessment is completed
+  useEffect(() => {
+    const handleAssessmentComplete = () => {
+      if (!isRefreshing) {
+        setIsRefreshing(true);
+        fetchAssessmentHistory(false);
+      }
+    };
+
+    window.addEventListener('assessmentCompleted', handleAssessmentComplete);
+    return () => window.removeEventListener('assessmentCompleted', handleAssessmentComplete);
+  }, [fetchAssessmentHistory, isRefreshing]);
 
   if (loading) {
-    return <div style={styles.loading}>Loading assessment history...</div>;
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingSpinner}></div>
+        <div style={styles.loadingText}>Loading assessment history...</div>
+      </div>
+    );
   }
 
   if (assessmentHistory.length === 0) {
@@ -84,7 +136,6 @@ function StudentProgressTracker() {
           <div
             key={assessment.attemptId}
             style={styles.card}
-            onClick={() => setSelectedAssessment(assessment)}
           >
             <div style={styles.cardHeader}>
               <h3 style={styles.cardTitle}>{assessment.assessmentTitle}</h3>
@@ -95,6 +146,12 @@ function StudentProgressTracker() {
               <div style={styles.date}>
                 {new Date(assessment.attemptDate).toLocaleDateString()}
               </div>
+              <button
+                style={styles.viewBtn}
+                onClick={() => setSelectedAssessment(assessment)}
+              >
+                View Details
+              </button>
             </div>
           </div>
         ))}
@@ -143,10 +200,26 @@ function StudentProgressTracker() {
 const styles = {
   container: {
     padding: "1rem",
+    minHeight: "400px", // Prevent layout shift
   },
-  loading: {
-    textAlign: "center",
+  loadingContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "400px",
     padding: "2rem",
+  },
+  loadingSpinner: {
+    width: "40px",
+    height: "40px",
+    border: "4px solid #f3f3f3",
+    borderTop: "4px solid #4f46e5",
+    borderRadius: "50%",
+    animation: "spin 1s linear infinite",
+  },
+  loadingText: {
+    marginTop: "1rem",
     color: "#4f46e5",
     fontSize: "1.1rem",
   },
@@ -159,24 +232,28 @@ const styles = {
     borderRadius: "12px",
     boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
     border: "1px solid #e0e7ff",
+    minHeight: "400px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
     gap: "1.5rem",
+    minHeight: "400px", // Prevent layout shift
   },
   card: {
     background: "#fff",
     borderRadius: "12px",
     boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
     overflow: "hidden",
-    cursor: "pointer",
     transition: "transform 0.2s, box-shadow 0.2s",
     border: "1px solid #e0e7ff",
-    "&:hover": {
-      transform: "translateY(-4px)",
-      boxShadow: "0 8px 12px rgba(0, 0, 0, 0.15)",
-    },
+    height: "100%", // Ensure consistent card height
+    display: "flex",
+    flexDirection: "column",
   },
   cardHeader: {
     padding: "1.5rem",
@@ -198,24 +275,41 @@ const styles = {
     padding: "0.25rem 0.75rem",
     borderRadius: "12px",
     fontWeight: 600,
-    fontSize: "0.9rem",
   },
   cardBody: {
     padding: "1.5rem",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
   },
   courseTag: {
     display: "inline-block",
     background: "#e0e7ff",
     color: "#4f46e5",
     padding: "0.25rem 0.75rem",
-    borderRadius: "12px",
-    fontSize: "0.85rem",
+    borderRadius: "8px",
+    fontSize: "0.875rem",
     fontWeight: 500,
     marginBottom: "0.75rem",
   },
   date: {
-    color: "#64748b",
-    fontSize: "0.9rem",
+    color: "#6b7280",
+    fontSize: "0.875rem",
+    marginBottom: "1rem",
+  },
+  viewBtn: {
+    background: '#4f46e5',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    padding: '0.75rem 1.5rem',
+    fontSize: '1.1rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+    width: '100%',
+    textAlign: 'center',
+    marginTop: 'auto', // Push button to bottom
   },
   modalOverlay: {
     position: "fixed",
@@ -231,50 +325,48 @@ const styles = {
   },
   modalContent: {
     background: "#fff",
-    borderRadius: "16px",
-    width: "90%",
+    borderRadius: "12px",
+    padding: "2rem",
     maxWidth: "500px",
-    boxShadow: "0 4px 24px rgba(0, 0, 0, 0.2)",
-    overflow: "hidden",
+    width: "90%",
+    position: "relative",
   },
   modalHeader: {
-    padding: "1.5rem",
-    background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
-    color: "#fff",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: "1.5rem",
   },
   modalTitle: {
     margin: 0,
-    fontSize: "1.3rem",
+    color: "#4f46e5",
+    fontSize: "1.25rem",
     fontWeight: 600,
   },
   closeButton: {
     background: "none",
     border: "none",
-    color: "#fff",
     fontSize: "1.5rem",
+    color: "#6b7280",
     cursor: "pointer",
     padding: "0.5rem",
-    "&:hover": {
-      opacity: 0.8,
-    },
   },
   modalBody: {
-    padding: "2rem",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "1.5rem",
   },
   scoreCircle: {
     width: "150px",
     height: "150px",
     borderRadius: "50%",
-    background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
+    background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     color: "#fff",
-    margin: "0 auto 2rem",
   },
   scoreValue: {
     fontSize: "2.5rem",
@@ -289,20 +381,31 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(2, 1fr)",
     gap: "1.5rem",
+    width: "100%",
   },
   detailItem: {
     textAlign: "center",
   },
   detailLabel: {
-    color: "#64748b",
-    fontSize: "0.9rem",
+    color: "#6b7280",
+    fontSize: "0.875rem",
     marginBottom: "0.5rem",
   },
   detailValue: {
-    color: "#1e293b",
-    fontSize: "1.1rem",
+    color: "#1f2937",
+    fontSize: "1.125rem",
     fontWeight: 600,
   },
 };
+
+// Add keyframes for loading spinner
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(styleSheet);
 
 export default StudentProgressTracker; 

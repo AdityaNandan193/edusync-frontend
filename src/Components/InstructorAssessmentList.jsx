@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 import AssessmentForm from "./AssessmentForm";
 import AssessmentViewer from "./AssessmentViewer";
+import DeleteConfirmation from "../components/DeleteConfirmation";
+import { toast } from "react-toastify";
+import { fetchWithCache, invalidateCache, styles as sharedStyles } from "../utils/dataFetching";
 
 const API_URL = "https://localhost:7136/api";
 
@@ -13,20 +16,16 @@ function InstructorAssessmentList({ courses, showAssessments, onNewAssessment })
   const [showForm, setShowForm] = useState(false);
   const [editAssessment, setEditAssessment] = useState(null);
   const [viewAssessment, setViewAssessment] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, assessmentId: null });
 
-  useEffect(() => {
-    if (showAssessments) {
-      fetchAssessments();
-    }
-  }, [showAssessments]);
-
-  const fetchAssessments = async () => {
+  const fetchAssessments = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/Assessment`);
+      const data = await fetchWithCache('Assessment', forceRefresh);
+      
       // Filter assessments based on course IDs that belong to this instructor
       const courseIds = courses.map(course => course.courseId);
-      const filtered = res.data.filter(assessment => 
+      const filtered = data.filter(assessment => 
         courseIds.includes(assessment.courseId)
       );
       
@@ -44,22 +43,37 @@ function InstructorAssessmentList({ courses, showAssessments, onNewAssessment })
     } catch (error) {
       console.error("Error fetching assessments:", error);
       setAssessments([]);
+      toast.error("Failed to fetch assessments");
     } finally {
       setLoading(false);
     }
-  };
+  }, [courses, assessments.length, onNewAssessment]);
+
+  useEffect(() => {
+    if (showAssessments) {
+      fetchAssessments();
+    }
+  }, [showAssessments, fetchAssessments]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this assessment?")) return;
+    setDeleteConfirmation({ isOpen: true, assessmentId: id });
+  };
+
+  const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/Assessment/${id}`);
-      fetchAssessments();
+      await axios.delete(`${API_URL}/Assessment/${deleteConfirmation.assessmentId}`);
+      invalidateCache('Assessment');
+      toast.success("Assessment deleted successfully");
+      fetchAssessments(true);
     } catch (error) {
+      console.error("Error deleting assessment:", error);
       if (error.response?.status === 401) {
-        alert("Your session has expired. Please log in again.");
+        toast.error("Your session has expired. Please log in again.");
         return;
       }
-      alert("Error deleting assessment");
+      toast.error("Failed to delete assessment");
+    } finally {
+      setDeleteConfirmation({ isOpen: false, assessmentId: null });
     }
   };
 
@@ -77,59 +91,64 @@ function InstructorAssessmentList({ courses, showAssessments, onNewAssessment })
     setShowForm(false);
     setEditAssessment(null);
     if (refresh) {
-      fetchAssessments();
+      invalidateCache('Assessment');
+      fetchAssessments(true);
+      toast.success(editAssessment ? "Assessment updated successfully" : "Assessment created successfully");
     }
   };
 
   // Only render the list if showAssessments is true
   if (!showAssessments) return null;
 
-  if (loading) {
-    return <div style={styles.loading}>Loading assessments...</div>;
-  }
-
   return (
     <div style={styles.dashboardBg}>
-      <div style={styles.headerRow}>
+      <div style={sharedStyles.header}>
         <button style={styles.addBtn} onClick={handleAdd}>
           + Add Assessment
         </button>
       </div>
-      <div style={styles.grid}>
-        {assessments.length === 0 ? (
-          <div style={styles.emptyState}>
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png"
-              alt="No Assessments"
-              style={{ width: 90, marginBottom: 16, opacity: 0.7 }}
-            />
-            <div style={{ color: "#64748b", fontWeight: 500, fontSize: "1.1rem" }}>
-              No assessments found. Click <b>+ Add Assessment</b> to create one!
-            </div>
-          </div>
-        ) : (
-          assessments.map((a) => (
-            <div key={a.assessmentId} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <h4 style={styles.cardTitle}>{a.title}</h4>
-                <span style={styles.scoreBadge}>{a.maxScore} pts</span>
+      {loading && assessments.length === 0 ? (
+        <div style={sharedStyles.loadingContainer}>
+          <div style={sharedStyles.loadingSpinner}></div>
+          <div style={{ color: '#4f46e5', fontWeight: 500 }}>Loading assessments...</div>
+        </div>
+      ) : (
+        <div style={styles.grid}>
+          {assessments.length === 0 ? (
+            <div style={styles.emptyState}>
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png"
+                alt="No Assessments"
+                style={{ width: 90, marginBottom: 16, opacity: 0.7 }}
+              />
+              <div style={{ color: "#64748b", fontWeight: 500, fontSize: "1.1rem" }}>
+                No assessments found. Click <b>+ Add Assessment</b> to create one!
               </div>
-              <div style={styles.cardBody}>
-                <div style={styles.courseTag}>
-                  {courses.find((c) => c.courseId === a.courseId)?.title || "Unknown"}
+            </div>
+          ) : (
+            assessments.map((a) => (
+              <div key={a.assessmentId} style={styles.card}>
+                <div style={styles.cardHeader}>
+                  <h4 style={styles.cardTitle}>{a.title}</h4>
+                  <span style={styles.scoreBadge}>{a.maxScore} pts</span>
+                </div>
+                <div style={styles.cardBody}>
+                  <div style={styles.courseTag}>
+                    {courses.find((c) => c.courseId === a.courseId)?.title || "Unknown"}
+                  </div>
+                </div>
+                <div style={styles.actions}>
+                  <button style={styles.viewBtn} onClick={() => setViewAssessment(a)}>View</button>
+                  <button style={styles.editBtn} onClick={() => handleEdit(a)}>Edit</button>
+                  <button style={styles.deleteBtn} onClick={() => handleDelete(a.assessmentId)}>
+                    Delete
+                  </button>
                 </div>
               </div>
-              <div style={styles.actions}>
-                <button style={styles.viewBtn} onClick={() => setViewAssessment(a)}>View</button>
-                <button style={styles.editBtn} onClick={() => handleEdit(a)}>Edit</button>
-                <button style={styles.deleteBtn} onClick={() => handleDelete(a.assessmentId)}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
       {showForm && (
         <AssessmentForm
           assessment={editAssessment}
@@ -151,6 +170,13 @@ function InstructorAssessmentList({ courses, showAssessments, onNewAssessment })
           </div>
         </div>
       )}
+      <DeleteConfirmation
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, assessmentId: null })}
+        onConfirm={confirmDelete}
+        title="Delete Assessment"
+        message="Are you sure you want to delete this assessment? This action cannot be undone."
+      />
     </div>
   );
 }
