@@ -53,7 +53,7 @@ function StudentAssessmentHistory() {
                   <td style={styles.td}>{attempt.score}/{attempt.maxScore}</td>
                   <td style={styles.td}>{attempt.percentage}%</td>
                   <td style={styles.td}>
-                    {new Date(attempt.attemptDate).toLocaleDateString()}
+                    {new Date(attempt.attemptDate).toLocaleDateString('en-GB')}
                   </td>
                 </tr>
               ))}

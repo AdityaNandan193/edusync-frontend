@@ -24,9 +24,24 @@ namespace EduSyncAPI.Controllers
 
         // GET: api/Assessment
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Assessment>>> GetAssessments()
+        public async Task<ActionResult<IEnumerable<AssessmentResponseDto>>> GetAssessments()
         {
-            return await _context.Assessments.ToListAsync();
+            var assessments = await _context.Assessments
+                .Include(a => a.Course)
+                .ThenInclude(c => c.Instructor)
+                .Select(a => new AssessmentResponseDto
+                {
+                    AssessmentId = a.AssessmentId,
+                    Title = a.Title,
+                    Questions = a.Questions,
+                    MaxScore = a.MaxScore,
+                    CourseId = a.CourseId,
+                    CourseTitle = a.Course.Title,
+                    InstructorName = a.Course.Instructor.Name
+                })
+                .ToListAsync();
+
+            return Ok(assessments);
         }
 
         // ✅ NEW: GET /api/Assessment/available

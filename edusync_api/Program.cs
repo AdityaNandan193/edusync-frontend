@@ -1,4 +1,4 @@
-using EduSyncAPI.Services; // Add this using directive
+using EduSyncAPI.Services;
 using EduSyncAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<EmailService>();
-
+builder.Services.AddScoped<BlobStorageService>();
 
 // Add DB context
 builder.Services.AddDbContext<EduSyncDbContext>(options =>

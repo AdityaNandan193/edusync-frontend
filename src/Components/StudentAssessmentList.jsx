@@ -189,6 +189,9 @@ function StudentAssessmentList({ onNewAssessment }) {
                   {courses.find(c => c.courseId === assessment.courseId)?.title || 'Unknown Course'}
                 </div>
                 <p style={styles.assessmentInfo}>
+                  Instructor: {assessment.instructorName || 'Unknown'}
+                </p>
+                <p style={styles.assessmentInfo}>
                   Total Questions: {JSON.parse(assessment.questions).length}
                 </p>
                 <p style={styles.assessmentInfo}>

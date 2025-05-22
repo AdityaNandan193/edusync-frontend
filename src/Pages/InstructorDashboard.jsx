@@ -7,6 +7,7 @@ import axios from "axios";
 import InstructorAnalytics from "../Components/InstructorAnalytics";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import Notification from "../Components/Notification";
+import FileUpload from "../Components/FileUpload";
 
 const API_URL = "https://localhost:7136/api";
 
@@ -18,6 +19,7 @@ const InstructorDashboard = () => {
   const [showCourses, setShowCourses] = useState(false);
   const [showAssessments, setShowAssessments] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
@@ -85,20 +87,33 @@ const InstructorDashboard = () => {
         setShowCourses(!showCourses);
         setShowAssessments(false);
         setShowAnalytics(false);
+        setShowFileUpload(false);
         break;
       case 'assessments':
         setShowCourses(false);
         setShowAssessments(!showAssessments);
         setShowAnalytics(false);
+        setShowFileUpload(false);
         break;
       case 'analytics':
         setShowCourses(false);
         setShowAssessments(false);
         setShowAnalytics(!showAnalytics);
+        setShowFileUpload(false);
+        break;
+      case 'files':
+        setShowCourses(false);
+        setShowAssessments(false);
+        setShowAnalytics(false);
+        setShowFileUpload(!showFileUpload);
         break;
       default:
         break;
     }
+  };
+
+  const handleFileUploadSuccess = (fileUrl) => {
+    showNotification(`File uploaded successfully! URL: ${fileUrl}`);
   };
 
   return (
@@ -297,6 +312,52 @@ const InstructorDashboard = () => {
             ) : (
               showAnalytics && <InstructorAnalytics />
             )}
+          </div>
+        </section>
+
+        {/* File Upload Section */}
+        <section style={styles.section}>
+          <div
+            style={{
+              ...styles.assessmentHeader,
+              background: showFileUpload
+                ? "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)"
+                : "#f1f5f9",
+              color: showFileUpload ? "#fff" : "#4f46e5",
+            }}
+            onClick={() => handleSectionToggle('files')}
+            tabIndex={0}
+            role="button"
+            aria-pressed={showFileUpload}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                <rect width="24" height="24" rx="6" fill={showFileUpload ? "#fff" : "#6366f1"} opacity="0.15"/>
+                <path d="M12 6v12M6 12h12" stroke={showFileUpload ? "#fff" : "#6366f1"} strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span style={{ fontWeight: 700, fontSize: "1.15rem" }}>File Upload</span>
+            </span>
+            <span
+              style={{
+                ...styles.triangle,
+                transform: showFileUpload ? "rotate(180deg)" : "rotate(0deg)",
+                color: showFileUpload ? "#fff" : "#6366f1"
+              }}
+            >
+              ▼
+            </span>
+          </div>
+          <div
+            style={{
+              ...styles.assessmentContent,
+              maxHeight: showFileUpload ? 2000 : 0,
+              padding: showFileUpload ? "2rem 0 0 0" : "0",
+              opacity: showFileUpload ? 1 : 0,
+              transition: "all 0.4s cubic-bezier(.4,0,.2,1)",
+              overflow: "hidden"
+            }}
+          >
+            {showFileUpload && <FileUpload onUploadSuccess={handleFileUploadSuccess} />}
           </div>
         </section>
       </main>

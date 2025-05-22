@@ -174,7 +174,7 @@ function InstructorAnalytics() {
                           <td style={styles.td}>{result.score}/{maxScore}</td>
                           <td style={styles.td}>{percentage}%</td>
                           <td style={styles.td}>
-                            {new Date(result.attemptDate).toLocaleDateString()}
+                            {new Date(result.attemptDate).toLocaleDateString('en-GB')}
                           </td>
                         </tr>
                       );
