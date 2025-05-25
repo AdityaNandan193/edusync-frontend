@@ -144,7 +144,7 @@ function StudentProgressTracker() {
             <div style={styles.cardBody}>
               <div style={styles.courseTag}>{assessment.courseTitle}</div>
               <div style={styles.date}>
-                {new Date(assessment.attemptDate).toLocaleDateString('en-GB')}
+                {new Date(assessment.attemptDate).toLocaleString()}
               </div>
               <button
                 style={styles.viewBtn}
@@ -185,7 +185,7 @@ function StudentProgressTracker() {
                 <div style={styles.detailItem}>
                   <div style={styles.detailLabel}>Attempt Date</div>
                   <div style={styles.detailValue}>
-                    {new Date(selectedAssessment.attemptDate).toLocaleDateString('en-GB')}
+                    {new Date(selectedAssessment.attemptDate).toLocaleString()}
                   </div>
                 </div>
               </div>
