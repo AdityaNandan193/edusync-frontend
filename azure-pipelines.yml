@@ -37,7 +37,7 @@ steps:
     app_location: '/'
     # output_location: Location of the build output (relative to app_location)
     # The default build output folder for create-react-app or Vite is 'build'
-    output_location: 'build'
+    output_location: 'dist'
     # ---------------------------------------------------
 
     # --- Azure Connection Details ---
