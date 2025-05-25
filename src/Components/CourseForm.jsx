@@ -11,6 +11,8 @@ function CourseForm({ course, onClose, instructorId }) {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [errors, setErrors] = useState({});
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   const validateUrl = (url) => {
     if (!url) return true; // URL is optional
@@ -19,6 +21,40 @@ function CourseForm({ course, onClose, instructorId }) {
       return true;
     } catch {
       return false;
+    }
+  };
+
+  const handleFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) {
+      setNotification({ message: "Please select a file first", type: "error" });
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await axios.post(`${API_URL}/file/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const uploadedUrl = response.data.fileUrl;
+      setMediaUrl(uploadedUrl);
+      setNotification({ message: "File uploaded successfully!", type: "success" });
+      setSelectedFile(null);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message;
+      setNotification({ message: `Error uploading file: ${errorMessage}`, type: "error" });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -95,32 +131,74 @@ function CourseForm({ course, onClose, instructorId }) {
           required
           style={styles.input}
         />
-        
-        <input
-          type="text"
-          placeholder="Media URL (e.g. PDF/Image/Video link)"
-          value={mediaUrl}
-          onChange={e => setMediaUrl(e.target.value)}
-          style={styles.input}
-        />
-        {errors.MediaUrl && <div style={styles.error}>{errors.MediaUrl}</div>}
-        
-        {mediaUrl && (
-          <div>
-            <small>
-              Current Media:{" "}
-              <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
-                View
-              </a>
-            </small>
+
+        <div style={styles.fileUploadSection}>
+          <h4 style={styles.sectionTitle}>Course Material</h4>
+          <div style={styles.fileUploadContainer}>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              style={styles.fileInput}
+              id="fileInput"
+            />
+            <label htmlFor="fileInput" style={styles.fileInputLabel}>
+              {selectedFile ? selectedFile.name : "Choose File"}
+            </label>
+            <button
+              type="button"
+              onClick={handleFileUpload}
+              disabled={!selectedFile || uploading}
+              style={{
+                ...styles.uploadButton,
+                opacity: !selectedFile || uploading ? 0.7 : 1,
+                cursor: !selectedFile || uploading ? "not-allowed" : "pointer"
+              }}
+            >
+              {uploading ? "Uploading..." : "Upload"}
+            </button>
           </div>
-        )}
-        <div style={styles.actions}>
-          <button type="submit" disabled={loading} style={styles.saveBtn}>
-            {loading ? "Saving..." : "Save"}
-          </button>
-          <button type="button" onClick={() => onClose(false)} style={styles.cancelBtn}>
+
+          {mediaUrl && (
+            <div style={styles.mediaUrlContainer}>
+              <p style={styles.mediaUrlLabel}>Uploaded Material:</p>
+              <div style={styles.mediaUrlWrapper}>
+                <input
+                  type="text"
+                  value={mediaUrl}
+                  readOnly
+                  style={styles.mediaUrlInput}
+                />
+              </div>
+              <a
+                href={mediaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.viewLink}
+              >
+                View Material
+              </a>
+            </div>
+          )}
+        </div>
+        
+        <div style={styles.buttonContainer}>
+          <button
+            type="button"
+            onClick={() => onClose(false)}
+            style={styles.cancelButton}
+          >
             Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.submitButton,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? "not-allowed" : "pointer"
+            }}
+          >
+            {loading ? "Saving..." : (course ? "Update Course" : "Create Course")}
           </button>
         </div>
       </form>
@@ -131,55 +209,124 @@ function CourseForm({ course, onClose, instructorId }) {
 const styles = {
   overlay: {
     position: "fixed",
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: "rgba(0,0,0,0.3)",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
   },
   form: {
-    background: "#fff",
+    backgroundColor: "white",
     padding: "2rem",
-    borderRadius: "10px",
-    minWidth: "320px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
+    borderRadius: "8px",
+    width: "90%",
+    maxWidth: "600px",
+    maxHeight: "90vh",
+    overflowY: "auto",
   },
   input: {
-    padding: "10px",
-    fontSize: "1rem",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
+    width: "100%",
+    padding: "0.75rem",
     marginBottom: "1rem",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    fontSize: "1rem",
   },
   error: {
-    color: "#dc2626",
+    color: "red",
     fontSize: "0.875rem",
     marginTop: "-0.5rem",
-    marginBottom: "0.5rem",
+    marginBottom: "1rem",
   },
-  actions: {
+  fileUploadSection: {
+    marginBottom: "1.5rem",
+    padding: "1rem",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+  },
+  sectionTitle: {
+    marginBottom: "1rem",
+    fontSize: "1.1rem",
+    fontWeight: "600",
+  },
+  fileUploadContainer: {
     display: "flex",
     gap: "1rem",
-    justifyContent: "flex-end",
+    alignItems: "center",
+    marginBottom: "1rem",
   },
-  saveBtn: {
-    background: "#4f46e5",
-    color: "#fff",
+  fileInput: {
+    display: "none",
+  },
+  fileInputLabel: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#f0f0f0",
+    borderRadius: "4px",
+    cursor: "pointer",
+    flex: 1,
+    textAlign: "center",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  uploadButton: {
+    padding: "0.5rem 1rem",
+    backgroundColor: "#4f46e5",
+    color: "white",
     border: "none",
     borderRadius: "4px",
-    padding: "8px 16px",
     cursor: "pointer",
   },
-  cancelBtn: {
-    background: "#f1f5f9",
-    color: "#333",
+  mediaUrlContainer: {
+    marginTop: "1rem",
+  },
+  mediaUrlLabel: {
+    marginBottom: "0.5rem",
+    fontSize: "0.875rem",
+    color: "#666",
+  },
+  mediaUrlWrapper: {
+    display: "flex",
+    gap: "0.5rem",
+  },
+  mediaUrlInput: {
+    flex: 1,
+    padding: "0.5rem",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    fontSize: "0.875rem",
+    backgroundColor: "#f8f8f8",
+  },
+  viewLink: {
+    display: "block",
+    marginTop: "0.5rem",
+    color: "#4f46e5",
+    textDecoration: "none",
+    fontSize: "0.875rem",
+  },
+  buttonContainer: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "1rem",
+    marginTop: "1.5rem",
+  },
+  cancelButton: {
+    padding: "0.75rem 1.5rem",
+    backgroundColor: "#f0f0f0",
     border: "none",
     borderRadius: "4px",
-    padding: "8px 16px",
+    cursor: "pointer",
+  },
+  submitButton: {
+    padding: "0.75rem 1.5rem",
+    backgroundColor: "#4f46e5",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
     cursor: "pointer",
   },
 };

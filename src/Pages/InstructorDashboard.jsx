@@ -7,7 +7,6 @@ import axios from "axios";
 import InstructorAnalytics from "../Components/InstructorAnalytics";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import Notification from "../Components/Notification";
-import FileUpload from "../Components/FileUpload";
 
 const API_URL = "https://localhost:7136/api";
 
@@ -19,7 +18,6 @@ const InstructorDashboard = () => {
   const [showCourses, setShowCourses] = useState(false);
   const [showAssessments, setShowAssessments] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showFileUpload, setShowFileUpload] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
@@ -74,8 +72,9 @@ const InstructorDashboard = () => {
 
   // Get initials for avatar
   const getInitials = (name) => {
-    if (!name) return "U";
-    const parts = name.split(" ");
+    if (!name || typeof name !== 'string') return "I"; // Return "I" for Instructor if name is undefined or invalid
+    const parts = name.trim().split(" ");
+    if (parts.length === 0 || !parts[0]) return "I";
     return parts.length === 1
       ? parts[0][0].toUpperCase()
       : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -87,33 +86,20 @@ const InstructorDashboard = () => {
         setShowCourses(!showCourses);
         setShowAssessments(false);
         setShowAnalytics(false);
-        setShowFileUpload(false);
         break;
       case 'assessments':
         setShowCourses(false);
         setShowAssessments(!showAssessments);
         setShowAnalytics(false);
-        setShowFileUpload(false);
         break;
       case 'analytics':
         setShowCourses(false);
         setShowAssessments(false);
         setShowAnalytics(!showAnalytics);
-        setShowFileUpload(false);
-        break;
-      case 'files':
-        setShowCourses(false);
-        setShowAssessments(false);
-        setShowAnalytics(false);
-        setShowFileUpload(!showFileUpload);
         break;
       default:
         break;
     }
-  };
-
-  const handleFileUploadSuccess = (fileUrl) => {
-    showNotification(`File uploaded successfully! URL: ${fileUrl}`);
   };
 
   return (
@@ -158,7 +144,7 @@ const InstructorDashboard = () => {
 
       {/* Main Dashboard Content */}
       <main style={styles.main}>
-        {/* Courses Section */}
+        {/* Course Manager Section */}
         <section style={styles.section}>
           <div
             style={{
@@ -176,10 +162,9 @@ const InstructorDashboard = () => {
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
                 <rect width="24" height="24" rx="6" fill={showCourses ? "#fff" : "#6366f1"} opacity="0.15"/>
-                <path d="M6 12h12" stroke={showCourses ? "#fff" : "#6366f1"} strokeWidth="2" strokeLinecap="round"/>
-                <path d="M9 9l-3 3 3 3" stroke={showCourses ? "#fff" : "#6366f1"} strokeWidth="2" strokeLinecap="round"/>
+                <path d="M7 10h10M7 14h6" stroke={showCourses ? "#fff" : "#6366f1"} strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <span style={{ fontWeight: 700, fontSize: "1.15rem" }}>Your Courses</span>
+              <span style={{ fontWeight: 700, fontSize: "1.15rem" }}>Course Manager</span>
             </span>
             <span
               style={{
@@ -314,52 +299,6 @@ const InstructorDashboard = () => {
             )}
           </div>
         </section>
-
-        {/* File Upload Section */}
-        <section style={styles.section}>
-          <div
-            style={{
-              ...styles.assessmentHeader,
-              background: showFileUpload
-                ? "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)"
-                : "#f1f5f9",
-              color: showFileUpload ? "#fff" : "#4f46e5",
-            }}
-            onClick={() => handleSectionToggle('files')}
-            tabIndex={0}
-            role="button"
-            aria-pressed={showFileUpload}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                <rect width="24" height="24" rx="6" fill={showFileUpload ? "#fff" : "#6366f1"} opacity="0.15"/>
-                <path d="M12 6v12M6 12h12" stroke={showFileUpload ? "#fff" : "#6366f1"} strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span style={{ fontWeight: 700, fontSize: "1.15rem" }}>File Upload</span>
-            </span>
-            <span
-              style={{
-                ...styles.triangle,
-                transform: showFileUpload ? "rotate(180deg)" : "rotate(0deg)",
-                color: showFileUpload ? "#fff" : "#6366f1"
-              }}
-            >
-              ▼
-            </span>
-          </div>
-          <div
-            style={{
-              ...styles.assessmentContent,
-              maxHeight: showFileUpload ? 2000 : 0,
-              padding: showFileUpload ? "2rem 0 0 0" : "0",
-              opacity: showFileUpload ? 1 : 0,
-              transition: "all 0.4s cubic-bezier(.4,0,.2,1)",
-              overflow: "hidden"
-            }}
-          >
-            {showFileUpload && <FileUpload onUploadSuccess={handleFileUploadSuccess} />}
-          </div>
-        </section>
       </main>
     </div>
   );
@@ -419,149 +358,106 @@ const styles = {
   },
   avatarMenu: {
     position: "absolute",
-    top: 60,
+    top: "calc(100% + 1rem)",
     right: 0,
     background: "#fff",
-    color: "#3730a3",
-    borderRadius: "14px",
-    boxShadow: "0 4px 24px rgba(79,70,229,0.13)",
-    minWidth: 220,
-    zIndex: 100,
-    padding: "1.2rem 1.2rem 1rem 1.2rem",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    animation: "fadeIn 0.2s",
+    borderRadius: "12px",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+    width: "280px",
+    zIndex: 1000,
+    overflow: "hidden",
   },
   avatarMenuHeader: {
+    padding: "1.5rem",
     display: "flex",
     alignItems: "center",
     gap: "1rem",
-    marginBottom: 8,
   },
   avatarLarge: {
-    width: 48,
-    height: 48,
+    width: "48px",
+    height: "48px",
     borderRadius: "50%",
     background: "#6366f1",
     color: "#fff",
     fontWeight: 700,
-    fontSize: "1.5rem",
+    fontSize: "1.4rem",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    border: "2px solid #e0e7ff",
   },
   avatarMenuName: {
-    fontWeight: 700,
+    fontWeight: 600,
     fontSize: "1.1rem",
-    color: "#3730a3",
+    color: "#1f2937",
   },
   avatarMenuRole: {
-    fontWeight: 500,
-    fontSize: "0.98rem",
-    color: "#6366f1",
-    marginTop: 2,
+    color: "#6b7280",
+    fontSize: "0.9rem",
+    marginTop: "2px",
   },
   avatarMenuDivider: {
-    height: 1,
-    background: "#e0e7ff",
-    margin: "10px 0 10px 0",
+    height: "1px",
+    background: "#e5e7eb",
+    margin: "0.5rem 0",
+  },
+  logoutButton: {
+    padding: "0.75rem 1.5rem",
+    background: "#ef4444",
     border: "none",
+    color: "#fff",
+    fontWeight: 600,
+    fontSize: "0.95rem",
+    cursor: "pointer",
+    textAlign: "center",
+    transition: "background-color 0.2s",
+    borderRadius: "8px",
+    margin: "0.5rem 1.5rem",
+    width: "calc(100% - 3rem)",
+    "&:hover": {
+      background: "#dc2626",
+    },
   },
   main: {
-    padding: "2.5rem 1rem 1rem 1rem",
     maxWidth: "1200px",
     margin: "0 auto",
+    padding: "2rem 3rem",
   },
   section: {
+    marginBottom: "2rem",
     background: "#fff",
     borderRadius: "16px",
     boxShadow: "0 2px 16px rgba(79,70,229,0.06)",
     padding: "2.2rem 2rem",
-    marginBottom: "2.2rem",
     position: "relative",
   },
-  sectionToggle: {
-    display: "flex",
-    alignItems: "center",
-    fontWeight: 700,
-    fontSize: "1.2rem",
-    color: "#4f46e5",
-    cursor: "pointer",
-    margin: 0,
-    marginBottom: "1.2rem",
-    gap: "0.7rem",
-    userSelect: "none",
-  },
-  arrow: {
-    fontSize: "1.1rem",
-    marginLeft: 8,
-  },
-  sectionTitle: {
-    fontWeight: 700,
-    fontSize: "1.2rem",
-    color: "#4f46e5",
-    margin: 0,
-    marginBottom: "1.2rem",
-  },
-  analyticsPlaceholder: {
-    background: "#f1f5f9",
-    borderRadius: "10px",
-    padding: "2rem",
-    textAlign: "center",
-    color: "#6366f1",
-    fontWeight: 600,
-    fontSize: "1.1rem",
-    border: "1.5px solid #e0e7ff",
-  },
-  // Assessment Manager UI improvements
   assessmentHeader: {
     display: "flex",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    padding: "1.5rem 2rem",
     borderRadius: "12px",
-    padding: "1.1rem 1.5rem",
-    fontWeight: 700,
-    fontSize: "1.1rem",
     cursor: "pointer",
+    transition: "all 0.3s ease",
+    fontWeight: 700,
+    fontSize: "1.2rem",
     boxShadow: "0 2px 8px rgba(79,70,229,0.08)",
-    marginBottom: "0.5rem",
+    marginBottom: "1rem",
     userSelect: "none",
     border: "1.5px solid #e0e7ff",
-    transition: "background 0.2s, color 0.2s",
+  },
+  triangle: {
+    fontSize: "1.1rem",
+    marginLeft: "1rem",
+    transition: "transform 0.3s ease",
   },
   assessmentContent: {
+    padding: "2rem 0 0 0",
     background: "#fff",
     borderRadius: "0 0 12px 12px",
     boxShadow: "0 2px 16px rgba(79,70,229,0.06)",
     marginTop: 0,
     marginBottom: "1.5rem",
     transition: "all 0.4s cubic-bezier(.4,0,.2,1)",
-  },
-  triangle: {
-    fontSize: 22,
-    marginLeft: 12,
-    transition: "transform 0.2s",
-    display: "inline-block",
-    // color is set inline for each section
-  },
-  logoutButton: {
-    width: "100%",
-    padding: "8px 12px",
-    backgroundColor: "#ef4444",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: "14px",
-    display: "block",
-    marginTop: "0.5rem",
-    transition: "background-color 0.2s",
-    "&:hover": {
-      backgroundColor: "#dc2626",
-    },
   },
 };
 

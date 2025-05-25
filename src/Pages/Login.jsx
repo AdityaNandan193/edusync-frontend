@@ -27,7 +27,9 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('Starting login process...');
       const data = await loginUser(email, password);
+      console.log('Login successful, data:', data);
       login(data); // save to context + localStorage
       setNotification({
         show: true,
@@ -39,9 +41,24 @@ const Login = () => {
         else if (data.role === "Instructor") navigate("/instructor");
       }, 1000);
     } catch (err) {
+      console.error('Login error in component:', err);
+      let errorMessage = "Login failed. ";
+      
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage += err.response.data || "Server error occurred.";
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMessage += "No response from server. Please check your connection.";
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage += err.message || "An unexpected error occurred.";
+      }
+      
       setNotification({
         show: true,
-        message: "Invalid email or password. Please try again.",
+        message: errorMessage,
         type: "error"
       });
     }

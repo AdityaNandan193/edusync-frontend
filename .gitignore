@@ -1,3 +1,5 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # dependencies
 /node_modules
 /.pnp
@@ -20,7 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# IDE
+# IDE files
 .idea/
 .vscode/
 *.swp
@@ -48,3 +50,6 @@ dist-ssr
 
 # Configuration files with sensitive data
 edusync_api/appsettings.json
+
+# Exclude the entire edusync_api directory
+edusync_api/
