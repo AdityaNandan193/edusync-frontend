@@ -3,7 +3,7 @@ import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 import AssessmentForm from "./AssessmentForm";
 import AssessmentViewer from "./AssessmentViewer";
-import DeleteConfirmation from "../components/DeleteConfirmation";
+import DeleteConfirmation from "../Components/DeleteConfirmation";
 import { toast } from "react-toastify";
 import { fetchWithCache, invalidateCache, styles as sharedStyles } from "../utils/dataFetching";
 
