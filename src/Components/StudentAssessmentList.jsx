@@ -79,6 +79,9 @@ function StudentAssessmentList({ onNewAssessment }) {
       const res = await axios.post(`${API_URL}/Result/attempt`, payload);
       console.log('Assessment submission response:', res.data);
       
+      // Dispatch custom event to trigger refresh in progress tracker
+      window.dispatchEvent(new CustomEvent('assessmentCompleted'));
+
       // Calculate percentage
       const questions = JSON.parse(selectedAssessment.questions);
       const percentage = Math.round((res.data.score / questions.length) * 100);
