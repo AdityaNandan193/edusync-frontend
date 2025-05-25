@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 function StudentAssessmentList({ onNewAssessment }) {
   const { user } = useAuth();

@@ -7,8 +7,7 @@ import StudentAssessmentList from "../Components/StudentAssessmentList";
 import StudentProgressTracker from "../Components/StudentProgressTracker";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import Notification from "../Components/Notification";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 const StudentDashboard = () => {
   const { user } = useAuth();

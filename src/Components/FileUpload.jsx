@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '../config';
 
 const FileUpload = ({ onUploadSuccess }) => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -22,7 +23,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         formData.append('file', selectedFile);
 
         try {
-            const response = await axios.post('https://localhost:7136/api/file/upload', formData, {
+            const response = await axios.post(`${API_URL}/api/file/upload`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

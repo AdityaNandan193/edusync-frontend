@@ -1,0 +1,1 @@
+export const API_URL = "https://edusync-backend-akbrdtebftg9gvew.centralindia-01.azurewebsites.net/api"; 

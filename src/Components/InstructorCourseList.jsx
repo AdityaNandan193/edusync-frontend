@@ -4,8 +4,7 @@ import CourseForm from "./CourseForm";
 import { useAuth } from "../Context/AuthContext";
 import DeleteConfirmation from "./DeleteConfirmation";
 import { toast } from "react-toastify";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 function InstructorCourseList({ onCoursesUpdate }) {
   const { user } = useAuth();

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 function InstructorAnalytics() {
   const { user } = useAuth();

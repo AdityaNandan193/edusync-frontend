@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Notification from "./Notification";
-
-const API_URL = "https://localhost:7136/api"; // Change if needed
+import { API_URL } from '../config';
 
 function CourseForm({ course, onClose, instructorId }) {
   const [title, setTitle] = useState(course ? course.title : "");

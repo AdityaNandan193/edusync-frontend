@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 import Notification from "./Notification";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 function AssessmentForm({ assessment, onClose, courses }) {
   const { user } = useAuth();
@@ -33,7 +32,7 @@ function AssessmentForm({ assessment, onClose, courses }) {
   const [notification, setNotification] = useState(null);
 
   // Add event listener for browser back button
-  React.useEffect(() => {
+  useEffect(() => {
     const handleBackButton = (e) => {
       e.preventDefault();
       handleClose();

@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const CACHE_DURATION = 30000; // 30 seconds cache
-const API_URL = "https://localhost:7136/api";
 
 // Cache storage
 const cache = new Map();

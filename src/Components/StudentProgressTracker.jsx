@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 import { toast } from "react-toastify";
+import { API_URL } from '../config';
 
-const API_URL = "https://localhost:7136/api";
 const DEBOUNCE_DELAY = 300; // 300ms delay for debouncing
 
 function StudentProgressTracker() {

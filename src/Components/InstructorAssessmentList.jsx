@@ -6,8 +6,7 @@ import AssessmentViewer from "./AssessmentViewer";
 import DeleteConfirmation from "../Components/DeleteConfirmation";
 import { toast } from "react-toastify";
 import { fetchWithCache, invalidateCache, styles as sharedStyles } from "../utils/dataFetching";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from "../config";
 
 function InstructorAssessmentList({ courses, showAssessments, onNewAssessment }) {
   const { user } = useAuth();

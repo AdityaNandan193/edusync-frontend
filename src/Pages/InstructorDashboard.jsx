@@ -7,8 +7,7 @@ import axios from "axios";
 import InstructorAnalytics from "../Components/InstructorAnalytics";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import Notification from "../Components/Notification";
-
-const API_URL = "https://localhost:7136/api";
+import { API_URL } from '../config';
 
 const InstructorDashboard = () => {
   const { user } = useAuth();
