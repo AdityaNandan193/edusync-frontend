@@ -54,6 +54,7 @@ function StudentProgressTracker() {
           assessmentId: result.assessmentId,
           assessmentTitle: assessment?.title || 'Unknown Assessment',
           courseTitle: course?.title || 'Unknown Course',
+          instructorName: course?.instructorName || 'Unknown Instructor',
           score: result.score,
           maxScore: maxScore,
           percentage: percentage,
@@ -143,6 +144,7 @@ function StudentProgressTracker() {
             </div>
             <div style={styles.cardBody}>
               <div style={styles.courseTag}>{assessment.courseTitle}</div>
+              <div style={styles.instructorTag}>Instructor: {assessment.instructorName}</div>
               <div style={styles.date}>
                 {new Date(assessment.attemptDate).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })}
               </div>
@@ -171,6 +173,7 @@ function StudentProgressTracker() {
             </div>
             <div style={styles.modalBody}>
               <div style={styles.courseTag}>{selectedAssessment.courseTitle}</div>
+              <div style={styles.instructorTag}>Instructor: {selectedAssessment.instructorName}</div>
               <div style={styles.scoreCircle}>
                 <div style={styles.scoreValue}>{selectedAssessment.percentage}%</div>
                 <div style={styles.scoreLabel}>Score</div>
@@ -292,6 +295,16 @@ const styles = {
     fontWeight: 500,
     marginBottom: "0.75rem",
   },
+  instructorTag: {
+    display: "inline-block",
+    background: "#f1f5f9",
+    color: "#64748b",
+    padding: "0.25rem 0.75rem",
+    borderRadius: "8px",
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    marginBottom: "0.75rem",
+  },
   date: {
     color: "#6b7280",
     fontSize: "0.875rem",
@@ -379,7 +392,7 @@ const styles = {
   },
   detailsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "1fr 1fr",
     gap: "1.5rem",
     width: "100%",
   },
